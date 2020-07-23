@@ -1,25 +1,79 @@
 ---
-title: "Reproducible Research: Peer Assessment 1"
-output: 
-  html_document:
-    keep_md: true
+title: "Course Project 1"
+output: html_document:
+  keep_md: true
 ---
 
+## Code for reading in the dataset and/or processing the data
+Reads the csv file and gives a basic summary about the dataset.
+```{r}
+activity <- read.csv("activity.csv")
+head(activity)
+str(activity)
+summary(activity)
 
-## Loading and preprocessing the data
+step <- subset(activity, !is.na(activity$steps), na.rm = T)
+```
 
+## Histogram of the total number of steps taken each day
+Calculates the sum of daily steps and Plots a Histogram for the same.
+```{r}
+stepsum <- aggregate(steps ~ date, step, sum)
+head(stepsum)
+hist(stepsum$steps, xlab = "Steps Taken", main = "Total Daily steps", col = "blue")
+```
 
+## Mean and median number of steps taken each day
+Calculates the mean and median of number of steps taken each day.
+```{r}
+mn <- round(mean(stepsum$steps), 2)
+mn
+md <- median(stepsum$steps)
+md
+```
 
-## What is mean total number of steps taken per day?
+## Time series plot of the average number of steps taken
+Plots a line plot for time over average number of steps taken.
+```{r}
+averageSteps <- aggregate(steps ~ interval, activity, mean)
+plot(averageSteps, type = "l", main = "Average number of steps Taken")
+```
 
+## The 5-minute interval that, on average, contains the maximum number of steps
+Calculates the maximum number of steps taken on average, in 5 minute interval.
+```{r}
+maxSteps <- averageSteps[which.max(averageSteps$steps), ]$interval
+maxSteps
+```
 
+## Code to describe and show a strategy for imputing missing data
+Imputing missing data
+```{r}
+sum(is.na(activity$steps))
 
-## What is the average daily activity pattern?
+impute <- activity
+index <- is.na(impute$steps)
+avg <- tapply(step$steps, step$interval, mean)
+impute$steps[index] <- avg[as.character(impute$interval[index])]
+```
 
+## Histogram of the total number of steps taken each day after missing values are imputed
+Histogram plot for total number of steps taken each day after imputing missing values.
+```{r}
+new_stepsum <- aggregate(steps ~ date, impute, sum)
+head(new_stepsum)
+hist(new_stepsum$steps, col = "blue", xlab = "steps", main = "Total Daily Steps Taken with imputed values")
+```
 
+## Panel plot comparing the average number of steps taken per 5-minute interval across weekdays and weekends
+Plot for comparing average number of steps taken per 5 minute interval across weekdays and weekends using lattice plotting system.
+```{r}
+impute$weekdays <- weekdays(as.Date(impute$date))
+impute$DayType <- ifelse(impute$weekdays == "Saturday"|impute$weekdays == "Sunday", "Weekend", "Weekday")
+head(impute)
 
-## Imputing missing values
+library(lattice)
+dayType_stepsum <- aggregate(steps ~ interval+DayType, impute, mean)
 
-
-
-## Are there differences in activity patterns between weekdays and weekends?
+xyplot(steps ~ interval | DayType, dayType_stepsum, type = "l", layout = c(1, 2), xlab = "Time Interval", ylab = "Steps", main = "Average No. of steps taken across weekdays and weekends")
+```
